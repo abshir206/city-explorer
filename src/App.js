@@ -1,92 +1,67 @@
-import React from 'react';
-import axios from 'axios';
+import React from "react";
+import axios from "axios";
+import Header from "./Header";
+import Footer from "./Footer";
+import "bootstrap/dist/css/bootstrap.min.css";
+import CityForm from "./CityForm";
+import "./App.css";
+import "./styles.css";
 
 class App extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      starWarsData: [],
-      cityName: '',
+      cityName: "",
       cityData: {},
-      error: false,
-      errorMessage: ''
-    }
+      lat: "",
+      long: "",
+      reults: false,
+    };
   }
 
-  eventHandler = async (e) => {
-    e.preventDefault();
-    try {
-      // console.log('event fired');
-      // get the data from the SW API
-      // axios is the library of code that we will use to make our requests
-      let starWarsCharacters = await axios.get('https://swapi.dev/api/peple/?page=1');
-      // console.log(starWarsCharacters.data.results);
-      //save it in state
-      this.setState({
-        starWarsData: starWarsCharacters.data.results
-      });
-    } catch (error) {
-      console.log('error: ', error);
-      console.log('error.message: ', error.message);
-      this.setState({
-        error: true,
-        errorMessage: `An Error Occured: ${error.response.status}`
-      })
-    }
-  }
-
-  handleCityInput = (e) => {
+  handleInput = (e) => {
     this.setState({
-      cityName: e.target.value
+      cityName: e.target.value,
     });
-  }
+  };
 
-  citySubmit = async (e) => {
+  handleSubmit = async (e) => {
     e.preventDefault();
-    // what city are we searching for — the one in state
+    let getCityData = await axios.get(
+      `https://us1.locationiq.com/v1/search?key=${process.env.REACT_APP_LOCATIONIQ_API_KEY}&q=${this.state.cityName}&format=json`
+    );
 
-    // get data from the Location IQ API
-    let cityData = await axios.get(`https://us1.locationiq.com/v1/search?key=${process.env.REACT_APP_LOCATIONIQ_API_KEY}&q=${this.state.cityName}&format=json`);
-    console.log(cityData.data[0]);
-    // save that data in state
-  }
+    this.setState({
+      results: true,
+      cityData: getCityData.data[0],
+      lat: getCityData.data[0].lat,
+      long: getCityData.data[0].lon,
+    });
+  };
 
   render() {
-
-    let starWarsListItems = this.state.starWarsData.map((swData, idx) => {
-      // console.log(idx);
-      // console.log(swData);
-      return <li key={idx}>{swData.name}</li>
-    })
-
-    let mapURL = `https://maps.locationiq.com/v3/staticmap?key=${process.env.REACT_APP_LOCATIONIQ_API_KEY}&center=47.6038321,-122.330062&zoom=12`
-
-    console.log(this.state.cityName);
+    let mapURL = `https://maps.locationiq.com/v3/staticmap?key=${process.env.REACT_APP_LOCATIONIQ_API_KEY}&center=${this.state.lat},${this.state.long}&zoom=11`;
     return (
       <>
-        <h1>Data from an API</h1>
-        <form onSubmit={this.eventHandler}>
-          <button type="submit">Display Star Wars data</button>
-        </form>
-
-        <form onSubmit={this.citySubmit}>
-          <label>Pick a City
-            <input type="text" onChange={this.handleCityInput} />
-          </label>
-          <button type="submit">Get City Data</button>
-        </form>
-
-        {this.state.error
-          ?
-          <p>{this.state.errorMessage}</p>
-          :
-          <ul>
-            {starWarsListItems}
+        <Header />
+        <CityForm
+          className="mb-5 p-5 "
+          handleSubmit={this.handleSubmit}
+          handleInput={this.handleInput}
+          cityData={this.state.cityData}
+        />
+        <div className="results">
+          <ul className="">
+            <li>{this.state.cityName}</li>
+            <li>Latitude: {this.state.lat}</li>
+            <li>longitude: {this.state.long}</li>
           </ul>
-        }
+          <img className="shadow bg body" src={mapURL} alt={this.state.cityName} ></img>
+        </div>
+        <Footer />
       </>
     );
   }
-}
+};
 
 export default App;
